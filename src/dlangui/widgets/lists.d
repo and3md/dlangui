@@ -1103,7 +1103,7 @@ class ListWidget : WidgetGroup, OnScrollHandler, OnAdapterChangeHandler {
                 }
 
                 w.measureMinWidth();
-                w.measureWidth(pwidth - _scrollSize);
+                w.measureWidth(pwidth);
                 w.measureMinHeight(w.measuredWidth);
                 w.measureHeight(w.measuredMinHeight);
                 _itemSizes[i].x = w.measuredWidth;
@@ -1138,8 +1138,6 @@ class ListWidget : WidgetGroup, OnScrollHandler, OnAdapterChangeHandler {
             _needLayout = oldNeedLayout;
             _scrollbar.cancelLayout();
         }
-        
-        
     }
 
     protected void updateItemPositions() {

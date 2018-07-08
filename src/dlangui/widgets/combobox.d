@@ -338,12 +338,16 @@ class ComboBox : ComboBoxBase {
         res.layoutWidth = WRAP_CONTENT;// FILL_PARENT;
         res.layoutHeight = WRAP_CONTENT;
         int maxItemWidth = 0;
+        int maxItemHeight = 0;
         for(int i = 0; i < _adapter.itemCount; i++) {
             Widget item = _adapter.itemWidget(i);
-            item.measureMinSize();
-            item.measureSize(item.measuredMinWidth, item.measuredMinHeight);
+            item.measureMinWidth();
+            item.measureWidth(item.measuredMinWidth);
+            item.measureMinHeight(item.measuredWidth);
+            item.measureHeight(item.measuredMinHeight);
             if (maxItemWidth < item.measuredWidth)
                 maxItemWidth = item.measuredWidth;
+            
         }
         res.minWidth = maxItemWidth;
         return res;
@@ -460,9 +464,12 @@ class IconTextComboBox : ComboBoxBase {
         int maxItemWidth = 0;
         for(int i = 0; i < _adapter.itemCount; i++) {
             Widget item = _adapter.itemWidget(i);
-            item.measureMinSize();
-            if (maxItemWidth < item.measuredMinWidth)
-                maxItemWidth = item.measuredMinWidth;
+            item.measureMinWidth();
+            item.measureWidth(item.measuredMinWidth);
+            item.measureMinHeight(item.measuredWidth);
+            item.measureHeight(item.measuredMinHeight);
+            if (maxItemWidth < item.measuredWidth)
+                maxItemWidth = item.measuredWidth;
         }
         res.minWidth = maxItemWidth;
         return res;

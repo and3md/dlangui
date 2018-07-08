@@ -145,11 +145,11 @@ class PopupWidget : WidgetGroupDefaultDrawing {
 
             if (cast(DialogFrame) child(0) !is null) {
                 child(0).measureHeight(pheight * 4 / 5);
-                adjustMeasuredHeight(pheight * 4 / 5, child(0).measuredHeight);
+                adjustMeasuredHeight(pheight * 4 / 5, child(0).measuredHeight + m.top + m.bottom + p.top + p.bottom);
             }
             else {
-                child(0).measureHeight(pheight);
-                adjustMeasuredHeight(parentHeight, child(0).measuredHeight);
+                child(0).measureHeight(parentHeight);
+                adjustMeasuredHeight(parentHeight, child(0).measuredHeight + m.top + m.bottom + p.top + p.bottom);
             }
         }
         else
