@@ -288,36 +288,27 @@ class SimpleBarChart : Widget {
         return _measuredTextToSetDescLineSize;
     }
 
-    override bool heightDependOnWidth() {
-        return true;
-    }
-    
-    override void measureSize(int parentWidth, int parentHeight) {
+
+    override void measureMinWidth() {
         FontRef font = font();
 
         int mWidth = minWidth;
-        int mHeight = minHeight;
-
         int chartW = 0;
-        int chartH = 0;
 
         _axisY.maxDescriptionSize = measureAxisYDesc();
 
         int usedWidth = _axisY.maxDescriptionSize.x + _axisY.thickness + _axisY.segmentTagLength + _axisX.zeroValueDist + margins.left + padding.left + margins.right + padding.right + _axisX.arrowSize;
 
         int currentMinBarWidth = max(_minBarWidth, _measuredTextToSetDescLineSize.x);
-        _axisX.maxDescriptionSize.y = _measuredTextToSetDescLineSize.y;
 
         // axis length
         _axisX.lengthFromZeroToArrow = cast(uint) barCount * (currentMinBarWidth + _barDistance);
-
+        
         if (_axisX.lengthFromZeroToArrow < _axisXMinWfromZero) {
             _axisX.lengthFromZeroToArrow = _axisXMinWfromZero;
             if (barCount > 0)
                 _barWidth = cast (int) ((_axisX.lengthFromZeroToArrow - (_barDistance * barCount)) / barCount);
         }
-
-        // minWidth and minHeight check
 
         if (minWidth > _axisX.lengthFromZeroToArrow + usedWidth) {
             _axisX.lengthFromZeroToArrow = minWidth-usedWidth;
@@ -325,47 +316,75 @@ class SimpleBarChart : Widget {
                 _barWidth = cast (int) ((_axisX.lengthFromZeroToArrow - (_barDistance * barCount)) / barCount);
         }
 
+        // compute X axis max description height
+        _axisX.maxDescriptionSize = measureAxisXDesc();
+        
+        chartW = _axisY.maxDescriptionSize.x + _axisY.thickness + _axisY.segmentTagLength + _axisX.zeroValueDist + _axisX.lengthFromZeroToArrow + _axisX.arrowSize;
+        if (_showTitle && chartW < _titleSize.y)
+            chartW = _titleSize.y;
+
+        _measuredMinWidth = chartW;
+        adjustMeasuredMinWidth(chartW);
+    }
+
+    override void measureWidth(int parentWidth) {
+        Rect m = margins;
+        Rect p = padding;
+        int pwidth = parentWidth;
+        pwidth -= m.left + m.right + p.left + p.right;
+        
+        int usedWidth = _axisY.maxDescriptionSize.x + _axisY.thickness + _axisY.segmentTagLength + _axisX.zeroValueDist + margins.left + padding.left + margins.right + padding.right + _axisX.arrowSize;
+
         // width FILL_PARENT support
         if (parentWidth != SIZE_UNSPECIFIED && layoutWidth == FILL_PARENT) {
-            if (_axisX.lengthFromZeroToArrow < parentWidth - usedWidth) {
-                _axisX.lengthFromZeroToArrow = parentWidth - usedWidth;
+            if (_axisX.lengthFromZeroToArrow < pwidth - usedWidth) {
+                _axisX.lengthFromZeroToArrow = pwidth - usedWidth;
             if (barCount > 0)
                 _barWidth = cast (int) ((_axisX.lengthFromZeroToArrow - (_barDistance * barCount)) / barCount);
             }
         }
 
+        if (barCount > 0)
+            _barWidth = cast (int) ((_axisX.lengthFromZeroToArrow - (_barDistance * barCount)) / barCount);
+        
+        int chartW = _axisY.maxDescriptionSize.x + _axisY.thickness + _axisY.segmentTagLength + _axisX.zeroValueDist + _axisX.lengthFromZeroToArrow + _axisX.arrowSize;
+        if (_showTitle && chartW < _titleSize.y)
+            chartW = _titleSize.y;
 
+        //_measuredWidth = chartW;
+        adjustMeasuredWidth(parentWidth, chartW + m.left + m.right + p.left + p.right);
+    }
+
+    override void measureMinHeight(int widgetWidth) {
+        // compute X axis max description height
+        _axisX.maxDescriptionSize = measureAxisXDesc();
+        
         // initialize axis y length
         _axisY.lengthFromZeroToArrow = cast(int) round(_axisRatio * _axisX.lengthFromZeroToArrow);
 
         // is axis Y enought long
         int usedHeight = _axisX.maxDescriptionSize.y + _axisX.thickness + _axisX.segmentTagLength + _axisY.zeroValueDist + ((_showTitle) ? _titleSize.y + _marginAfterTitle : 0) + margins.top + padding.top + margins.bottom + padding.bottom + _axisY.arrowSize;
-        if (minHeight > _axisY.lengthFromZeroToArrow + usedHeight) {
-            _axisY.lengthFromZeroToArrow = minHeight - usedHeight;
-            _axisX.lengthFromZeroToArrow = cast (int) round(_axisY.lengthFromZeroToArrow / _axisRatio);
-        }
+        int chartH = _axisX.maxDescriptionSize.y + _axisX.thickness + _axisX.segmentTagLength + _axisY.zeroValueDist + _axisY.lengthFromZeroToArrow + ((_showTitle) ? _titleSize.y + _marginAfterTitle : 0) + _axisY.arrowSize;
+        _measuredMinHeight = chartH;
+        adjustMeasuredMinHeight(chartH);
+    }
+
+    override void measureHeight(int parentHeight) {
+        Rect m = margins;
+        Rect p = padding;
+        int pheight = parentHeight;
+        pheight -= m.top + m.bottom + p.top + p.bottom;
+
+        int usedHeight = _axisX.maxDescriptionSize.y + _axisX.thickness + _axisX.segmentTagLength + _axisY.zeroValueDist + ((_showTitle) ? _titleSize.y + _marginAfterTitle : 0) + margins.top + padding.top + margins.bottom + padding.bottom + _axisY.arrowSize;
 
         // height FILL_PARENT support
         if (parentHeight != SIZE_UNSPECIFIED && layoutHeight == FILL_PARENT) {
-            if (_axisY.lengthFromZeroToArrow < parentHeight - usedHeight)
-                _axisY.lengthFromZeroToArrow = parentHeight - usedHeight;
+            if (_axisY.lengthFromZeroToArrow < pheight - usedHeight)
+                _axisY.lengthFromZeroToArrow = pheight - usedHeight;
         }
-
-        if (barCount > 0)
-            _barWidth = cast (int) ((_axisX.lengthFromZeroToArrow - (_barDistance * barCount)) / barCount);
-
-        // compute X axis max description height
-        _axisX.maxDescriptionSize = measureAxisXDesc();
-
-        // compute chart size
-        chartW = _axisY.maxDescriptionSize.x + _axisY.thickness + _axisY.segmentTagLength + _axisX.zeroValueDist + _axisX.lengthFromZeroToArrow + _axisX.arrowSize;
-        if (_showTitle && chartW < _titleSize.y)
-            chartW = _titleSize.y;
-
-        chartH = _axisX.maxDescriptionSize.y + _axisX.thickness + _axisX.segmentTagLength + _axisY.zeroValueDist + _axisY.lengthFromZeroToArrow + ((_showTitle) ? _titleSize.y + _marginAfterTitle : 0) + _axisY.arrowSize;
-        adjustMeasuredSize(parentWidth, parentHeight, chartW, chartH);
+        int chartH = _axisX.maxDescriptionSize.y + _axisX.thickness + _axisX.segmentTagLength + _axisY.zeroValueDist + _axisY.lengthFromZeroToArrow + ((_showTitle) ? _titleSize.y + _marginAfterTitle : 0) + _axisY.arrowSize;
+        adjustMeasuredHeight(parentHeight, chartH + m.top + m.bottom + p.top + p.bottom);
     }
-
 
     protected Point measureAxisXDesc() {
         Point sz;
@@ -413,7 +432,6 @@ class SimpleBarChart : Widget {
         Rect rc = _pos;
         applyMargins(rc);
         applyPadding(rc);
-
         auto saver = ClipRectSaver(buf, rc, alpha);
 
         FontRef font = font();
