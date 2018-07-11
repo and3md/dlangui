@@ -838,348 +838,6 @@ class TableLayout : WidgetGroupDefaultDrawing {
         this(null);
     }
 
-    protected static struct TableLayoutCell {
-        int col;
-        int row;
-        Widget widget;
-        @property bool layoutWidthFill() { return widget ? widget.layoutWidth == FILL_PARENT : false; }
-        @property bool layoutHeightFill() { return widget ? widget.layoutHeight == FILL_PARENT : false; }
-        @property int measuredWidth() { return widget ? widget.measuredWidth : 0; }
-        @property int measuredHeight() { return widget ? widget.measuredHeight : 0; }
-        @property int measuredMinWidth() { return widget ? widget.measuredMinWidth : 0; }
-        @property int measuredMinHeight() { return widget ? widget.measuredMinHeight : 0; }
-        @property int layoutWidth() { return widget ? widget.layoutWidth : 0; }
-        @property int layoutHeight() { return widget ? widget.layoutHeight : 0; }
-        @property int minWidth() { return widget ? widget.minWidth : 0; }
-        @property int maxWidth() { return widget ? widget.maxWidth : 0; }
-        @property int minHeight() { return widget ? widget.minHeight : 0; }
-        @property int maxHeight() { return widget ? widget.maxHeight : 0; }
-        @property bool heightDependOnWidth() {return widget.heightDependOnWidth();}
-        void clear(int col, int row) {
-            this.col = col;
-            this.row = row;
-            widget = null;
-        }
-        void measureMinSize(Widget w) {
-            widget = w;
-            if (widget)
-                widget.measureMinSize();
-        }
-        
-        void measureSize(Widget w, int pwidth, int pheight) {
-            widget = w;
-            if (widget)
-                widget.measureSize(pwidth, pheight);
-        }
-    }
-
-    protected static struct TableLayoutGroup {
-        int index;
-        int measuredSize;
-        int measuredMinSize;
-        int layoutSize;
-        int minSize;
-        int maxSize;
-        int size;
-        int sizeMin;
-        bool fill;
-        void initialize(int index) {
-            measuredSize = measuredMinSize = minSize = maxSize = layoutSize = size = sizeMin = 0;
-            fill = false;
-            this.index = index;
-        }
-        void rowCellMeasured(ref TableLayoutCell cell) {
-            if (cell.layoutHeightFill)
-                fill = true;
-            if (measuredSize < cell.measuredHeight)
-                measuredSize = cell.measuredHeight;
-            if (minSize < cell.minHeight)
-                minSize = cell.minHeight;
-            if (cell.layoutHeight == FILL_PARENT)
-                layoutSize = FILL_PARENT;
-            size = measuredSize;
-        }
-        void colCellMeasured(ref TableLayoutCell cell) {
-            if (cell.layoutWidthFill)
-                fill = true;
-            if (measuredSize < cell.measuredWidth)
-                measuredSize = cell.measuredWidth;
-            if (minSize < cell.minWidth)
-                minSize = cell.minWidth;
-            if (cell.layoutWidth == FILL_PARENT)
-                layoutSize = FILL_PARENT;
-            size = measuredSize;
-        }
-
-        void rowCellMeasuredMin(ref TableLayoutCell cell) {
-            if (cell.layoutHeightFill)
-                fill = true;
-            if (measuredMinSize < cell.measuredMinHeight)
-                measuredMinSize = cell.measuredMinHeight;
-            if (minSize < cell.minHeight)
-                minSize = cell.minHeight;
-            if (cell.layoutHeight == FILL_PARENT)
-                layoutSize = FILL_PARENT;
-            sizeMin = measuredMinSize;
-        }
-        
-        void colCellMeasuredMin(ref TableLayoutCell cell) {
-            if (cell.layoutWidthFill)
-                fill = true;
-            if (measuredMinSize < cell.measuredMinWidth)
-                measuredMinSize = cell.measuredMinWidth;
-            if (minSize < cell.minWidth)
-                minSize = cell.minWidth;
-            if (cell.layoutWidth == FILL_PARENT)
-                layoutSize = FILL_PARENT;
-            sizeMin = measuredMinSize;
-        }
-        
-    }
-
-    protected static struct TableLayoutHelper {
-        protected TableLayoutGroup[] _cols;
-        protected TableLayoutGroup[] _rows;
-        protected TableLayoutCell[] _cells;
-        protected int colCount;
-        protected int rowCount;
-        protected bool layoutWidthFill;
-        protected bool layoutHeightFill;
-        protected int fillParentCols;
-        protected int fillParentRows;
-        protected int _measuredMinWidth;
-        protected int _measuredMinHeight;
-        protected Widget parent;
-
-        protected bool _heightDependOnWidth;
-        bool heightDependOnWidth() {
-            return _heightDependOnWidth;
-        }
-
-        void initialize(Widget parent, int cols, int rows, bool layoutWidthFill, bool layoutHeightFill) {
-            colCount = cols;
-            rowCount = rows;
-            this.parent = parent;
-            this.layoutWidthFill = layoutWidthFill;
-            this.layoutHeightFill = layoutHeightFill;
-            _cells.length = cols * rows;
-            _rows.length = rows;
-            _cols.length = cols;
-            _heightDependOnWidth = false;
-            for(int i = 0; i < rows; i++)
-                _rows[i].initialize(i);
-            for(int i = 0; i < cols; i++)
-                _cols[i].initialize(i);
-            for (int y = 0; y < rows; y++) {
-                for (int x = 0; x < cols; x++) {
-                    cell(x, y).clear(x, y);
-                }
-            }
-        }
-
-        ref TableLayoutCell cell(int col, int row) {
-            return _cells[row * colCount + col];
-        }
-
-        ref TableLayoutGroup col(int c) {
-            return _cols[c];
-        }
-
-        ref TableLayoutGroup row(int r) {
-            return _rows[r];
-        }
-
-        Point measureMinSize(Widget parent, int cc, int rc, bool layoutWidthFill, bool layoutHeightFill) {
-            initialize(parent, cc, rc, layoutWidthFill, layoutHeightFill);
-            fillParentCols = 0;
-            fillParentRows = 0;
-            
-            for (int y = 0; y < rc; y++) {
-                for (int x = 0; x < cc; x++) {
-                    int index = y * cc + x;
-                    Widget child = index < parent.childCount ? parent.child(index) : null;
-                    cell(x, y).measureMinSize(child);
-                    if (child && (!_heightDependOnWidth))
-                        _heightDependOnWidth = cell(x, y).heightDependOnWidth();
-                }
-            }
-
-            int totalWidth = 0;
-            for (int x = 0; x < cc; x++) {
-                for (int y = 0; y < rc; y++) {
-                    col(x).colCellMeasuredMin(cell(x,y));
-                    if (col(x).fill)
-                        fillParentCols++;
-                }
-                totalWidth += col(x).measuredMinSize;
-            }
-
-            int totalHeight = 0;
-            for (int y = 0; y < rc; y++) {
-                for (int x = 0; x < cc; x++) {
-                    row(y).rowCellMeasuredMin(cell(x,y));
-                    if (row(y).fill)
-                        fillParentRows++;
-                }
-                totalHeight += row(y).measuredMinSize;
-            }
-
-            _measuredMinHeight = totalHeight;
-            _measuredMinWidth = totalWidth;
-            //Log.d("    min size         ", parent.id, " w=", totalWidth, " h=", totalHeight);
-            return Point(totalWidth, totalHeight);
-        }
-        
-
-        Point measureSize(Widget parent, int cc, int rc, int pwidth, int pheight, bool layoutWidthFill, bool layoutHeightFill) {
-            //Log.d("grid measure ", parent.id, " pw=", pwidth, " ph=", pheight);
-            //initialize(parent, cc, rc, layoutWidthFill, layoutHeightFill);
-
-            if (_heightDependOnWidth) {
-                
-            }
-
-            int deltaW = 0;
-            //if (totalWidth < pwidth && liczba_rozszerzkolumn>0) 
-            //    deltaW = (pwidth - totalWidth) / liczba_rozszerzkolumn;
-            
-            if (_measuredMinWidth < pwidth)  
-                deltaW = (pwidth - _measuredMinWidth) / cc;
-
-            //Log.d("delta w ", deltaW);
-            
-            int deltaH = 0;
-            if (_measuredMinHeight < pheight) 
-                deltaH = (pheight - _measuredMinHeight) / rc;
-
-            //Log.d("deltaH ", deltaH);
-            int test = 0;
-            
-            TableLayoutCell mCell;
-            for (int y = 0; y < rc; y++) {
-                for (int x = 0; x < cc; x++) {
-                    int index = y * cc + x;
-                    Widget child = index < parent.childCount ? parent.child(index) : null;
-                    mCell = cell(x, y);
-                    /*Log.d("min width: ",mCell.measuredMinWidth); 
-                    Log.d("min width + delta (",deltaW,"): ", mCell.measuredMinWidth + (mCell.layoutWidthFill ? deltaW : 0));
-                    Log.d("min height: ",mCell.measuredMinHeight); 
-                    Log.d("min height + delta (",deltaH,"): ", mCell.measuredMinHeight + (mCell.layoutHeightFill ? deltaH : 0));*/
-                    mCell.measureSize(child, mCell.measuredMinWidth + (mCell.layoutWidthFill ? deltaW : 0), mCell.measuredMinHeight + (mCell.layoutHeightFill ? deltaH : 0));
-                    ////mCell.measureSize(child, mCell.measuredMinWidth + (mCell.layoutWidthFill ? deltaW : 0), mCell.measuredMinHeight);
-                    /*Log.d("new width: ", mCell.measuredWidth);
-                    Log.d("new height: ", mCell.measuredHeight);*/
-                    //if (child)
-                    //    Log.d("cell ", x, ",", y, " child=", child.id, " measuredWidth=", child.measuredWidth, " minWidth=", child.minWidth);
-                }
-            }
-            
-            // calc total row size
-            int totalHeight = 0;
-            for (int y = 0; y < rc; y++) {
-                for (int x = 0; x < cc; x++) {
-                    row(y).rowCellMeasured(cell(x,y));
-                }
-                totalHeight += row(y).measuredSize;
-                //Log.d("Row height ",y, " wynosi " , row(y).measuredSize);
-            }
-
-            // calc total col size
-            int totalWidth = 0;
-            for (int x = 0; x < cc; x++) {
-                for (int y = 0; y < rc; y++) {
-                    col(x).colCellMeasured(cell(x,y));
-                }
-                totalWidth += col(x).measuredSize;
-                //Log.d("Szerokosc kolumny ",x, " wynosi " , col(x).measuredSize);
-            }
-            
-            //Log.d("             ", parent.id, " w=", totalWidth, " h=", totalHeight);
-            //Log.d("Total size ", totalWidth, " ", totalHeight);
-            return Point(totalWidth, totalHeight);
-        }
-
-        void layoutRows(int parentSize) {
-            if (layoutHeightFill && rowCount) {
-                int totalSize = 0;
-                int fillCount = 0;
-                for (int y = 0; y < rowCount; y++) {
-                    totalSize += row(y).size;
-                    if (row(y).fill)
-                        fillCount++;
-                }
-                int extraSize = parentSize - totalSize;
-                int resizeCount = fillCount > 0 ? fillCount : rowCount;
-                int delta = extraSize / resizeCount;
-                int delta0 = extraSize % resizeCount;
-
-                if (extraSize > 0) {
-                    for (int y = 0; y < rowCount; y++) {
-                        if (/*fillCount == 0 ||*/ row(y).fill) {
-                            row(y).size += delta + delta0;
-                            delta0 = 0;
-                        }
-                    }
-                }
-            }
-        }
-        void layoutCols(int parentSize) {
-            if (layoutWidthFill) {
-                int totalSize = 0;
-                int fillCount = 0;
-                for (int x = 0; x < colCount; x++) {
-                    totalSize += col(x).size;
-                    if (col(x).fill)
-                        fillCount++;
-                }
-                int extraSize = parentSize - totalSize;
-                int resizeCount = fillCount > 0 ? fillCount : colCount;
-                int delta = extraSize / resizeCount;
-                int delta0 = extraSize % resizeCount;
-
-                if (extraSize > 0) {
-                    for (int x = 0; x < colCount; x++) {
-                        if (fillCount == 0 || col(x).fill) {
-                            col(x).size += delta + delta0;
-                            delta0 = 0;
-                        }
-                    }
-                } else if (extraSize < 0) {
-                    for (int x = 0; x < colCount; x++) {
-                        if (fillCount == 0 || col(x).fill) {
-                            col(x).size += delta + delta0;
-                            delta0 = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        void layout(Rect rc) {
-            // widget sizes can change here
-            // measureSize(parent, colCount, rowCount, rc.width, rc.height, layoutWidthFill, layoutHeightFill);
-            //layoutRows(rc.height);
-            //layoutCols(rc.width);
-            int y0 = 0;
-            for (int y = 0; y < rowCount; y++) {
-                int x0 = 0;
-                for (int x = 0; x < colCount; x++) {
-                    int index = y * colCount + x;
-                    Rect r;
-                    r.left = rc.left + x0;
-                    r.top = rc.top + y0;
-                    r.right = r.left + col(x).size;
-                    r.bottom = r.top + row(y).size;
-                    if (cell(x, y).widget)
-                        cell(x, y).widget.layout(r);
-                    x0 += col(x).size;
-                }
-                y0 += row(y).size;
-            }
-        }
-    }
-    protected TableLayoutHelper _cells;
-
     protected int _colCount = 1;
     /// number of columns
     @property int colCount() { return _colCount; }
@@ -1192,39 +850,176 @@ class TableLayout : WidgetGroupDefaultDrawing {
     mixin(generatePropertySettersMethodOverride("setIntProperty", "int",
           "colCount"));
 
-    /// set to true if change widget width makes new widget heights
-    override bool heightDependOnWidth() {
-        return _cells.heightDependOnWidth();
+    Widget getCell(int col, int row) {
+        int index = row * colCount + col;
+        if (index > childCount - 1)
+            return null;
+        return child(index);
     }
 
-    override void measureMinSize() {
-        if (visibility == Visibility.Gone)
-            return;
-        
-        int rc = rowCount;
-        Point sz = _cells.measureMinSize(this, colCount, rc, layoutWidth == FILL_PARENT, layoutHeight == FILL_PARENT);
-        adjustMeasuredMinSize(sz.x, sz.y);
+
+    protected struct ColumnData {
+        int minWidth = 0;
+        bool fillParent = false;
+        int maxLayoutWeight = 1;
+
+        void clear() {
+            minWidth = 0;
+            fillParent = false;
+            maxLayoutWeight = 1;
+        }
     }
-          
-    /// Measure widget according to desired width and height constraints. (Step 1 of two phase layout).
-    override void measureSize(int parentWidth, int parentHeight) {
-        if (visibility == Visibility.Gone)
-            return;
+
+    protected struct RowData {
+        int minHeight = 0;
+        bool fillParent = false;
+        int maxLayoutWeight = 1;
+
+        void clear() {
+            minHeight = 0;
+            fillParent = false;
+            maxLayoutWeight = 1;
+        }
+    }
+
+    protected ColumnData[] _colsData;
+    protected int _totalWidthWeight = 0;
+    protected int _totalColMinWidth = 0;
+    override void measureMinWidth() {
+        _colsData.length = _colCount;
+        foreach (ref cd ; _colsData) 
+            cd.clear();
+        _totalColMinWidth = 0;
+        _totalWidthWeight = 0;
+
+        Widget w;
+        ColumnData * cd;
+        for (int c = 0 ; c < _colCount ; c++) {
+            cd = &_colsData[c];
+            for (int r = 0 ; r < rowCount ; r++) {
+                w = getCell(c, r);
+                if (!w)
+                    break;
+                w.measureMinWidth();
+                
+                if (w.measuredMinWidth > cd.minWidth)
+                    cd.minWidth = w.measuredMinWidth;
+                if (w.layoutWidth == FILL_PARENT) {
+                    cd.fillParent = true;
+                    if (w.layoutWeight > cd.maxLayoutWeight)
+                        cd.maxLayoutWeight = w.layoutWeight;
+                }
+            }
+            _totalColMinWidth += cd.minWidth;
+            if (cd.fillParent)
+                _totalWidthWeight += cd.maxLayoutWeight;
+        }
+
+        adjustMeasuredMinWidth(_totalColMinWidth);
+    }
+
+    override void measureWidth(int parentWidth) {
         Rect m = margins;
         Rect p = padding;
-        // calc size constraints for children
-        int pwidth = parentWidth;
-        int pheight = parentHeight;
-        if (parentWidth != SIZE_UNSPECIFIED)
-            pwidth -= m.left + m.right + p.left + p.right;
-        if (parentHeight != SIZE_UNSPECIFIED)
-            pheight -= m.top + m.bottom + p.top + p.bottom;
+        int pwidth = parentWidth - m.left + m.right + p.left + p.right;
+        int totalWidth = 0;
 
-        int rc = rowCount;
-        Point sz = _cells.measureSize(this, colCount, rc, pwidth, pheight, layoutWidth == FILL_PARENT, layoutHeight == FILL_PARENT);
-        adjustMeasuredSize(parentWidth, parentHeight, sz.x, sz.y);
+        int extraSpace = pwidth - _totalColMinWidth;
+        int extraSpaceRemained = extraSpace;
+        int extraSpaceStep = 0;
+        if (_totalWidthWeight != 0)
+            extraSpaceStep = extraSpace / _totalWidthWeight;
+
+        Widget w;
+        ColumnData *cd;
+        for (int c = 0 ; c < _colCount ; c++) {
+            cd = &_colsData[c];
+            if (cd.fillParent) 
+                cd.minWidth = cd.minWidth + extraSpaceStep * cd.maxLayoutWeight;
+            
+            for (int r = 0 ; r < rowCount ; r++) {
+                w = getCell(c, r);
+                if (!w)
+                    break;
+                w.measureWidth(cd.minWidth);
+            }
+            totalWidth += cd.minWidth;
+        }
+        
+        adjustMeasuredWidth(parentWidth, totalWidth + m.left + m.right + p.left + p.right);
     }
 
+    protected RowData[] _rowsData;
+    protected int _totalHeightWeight = 0;
+    protected int _totalRowMinHeight = 0;
+    override void measureMinHeight(int widgetWidth) {
+        _totalRowMinHeight = 0;
+        _totalHeightWeight = 0;
+
+        _rowsData.length = rowCount;
+        foreach (ref rd ; _rowsData) 
+            rd.clear();
+
+        RowData * rd;
+        ColumnData * cd;
+        Widget w;
+
+        for (int r = 0 ; r < rowCount ; r++) {
+            rd = &_rowsData[r];
+            
+            for (int c = 0 ; c < _colCount ; c++) {
+                cd = &_colsData[c];
+            
+                w = getCell(c, r);
+                if (!w)
+                    break;
+                w.measureMinHeight(cd.minWidth);
+                if (w.measuredMinHeight > rd.minHeight)
+                    rd.minHeight = w.measuredMinHeight;
+                if (w.layoutHeight == FILL_PARENT) {
+                    rd.fillParent = true;
+                    if (w.layoutWeight > rd.maxLayoutWeight)
+                        rd.maxLayoutWeight = w.layoutWeight;
+                }
+            }
+            _totalRowMinHeight += rd.minHeight;
+            if (rd.fillParent)
+                _totalHeightWeight += rd.maxLayoutWeight;
+        }
+        adjustMeasuredMinHeight(_totalRowMinHeight);
+    }
+
+    override void measureHeight(int parentHeight) {
+        Rect m = margins;
+        Rect p = padding;
+        int pheight = parentHeight - m.top + m.bottom + p.top + p.bottom;
+        int totalHeight = 0;
+
+        int extraSpace = parentHeight - _totalRowMinHeight;
+        int extraSpaceRemained = extraSpace;
+        int extraSpaceStep = 0;
+        if (_totalHeightWeight != 0)
+            extraSpaceStep = extraSpace / _totalHeightWeight;
+
+        Widget w;
+        RowData *rd;
+        for (int r = 0 ; r < rowCount ; r++) {
+            rd = &_rowsData[r];
+            if (rd.fillParent)
+                rd.minHeight = rd.minHeight + extraSpaceStep * rd.maxLayoutWeight;
+
+            for (int c = 0 ; c < _colCount ; c++) {
+                w = getCell(c, r);
+                if (!w)
+                    break;
+                w.measureHeight(rd.minHeight);
+            }
+            totalHeight += rd.minHeight;
+        }
+        
+        adjustMeasuredHeight(parentHeight, totalHeight + m.top + m.bottom + p.top + p.bottom);
+    }
+    
     /// Set widget rectangle to specified value and layout widget contents. (Step 2 of two phase layout).
     override void layout(Rect rc) {
         _needLayout = false;
@@ -1234,7 +1029,51 @@ class TableLayout : WidgetGroupDefaultDrawing {
         _pos = rc;
         applyMargins(rc);
         applyPadding(rc);
-        _cells.layout(rc);
+
+        int y0 = rc.top;
+        ColumnData cd;
+        RowData rd;
+        Widget w;
+        for (int y = 0; y < rowCount; y++) {
+            rd = _rowsData[y];
+            int x0 = rc.left;
+            for (int x = 0; x < _colCount; x++) {
+                cd = _colsData[x];
+                Rect r;
+                w = getCell(x, y);
+                if (w) {
+                    r.left = x0;
+                    if (w.measuredWidth < cd.minWidth){
+                        if ((alignment & Align.HCenter) == Align.HCenter) {
+                            r.left += ((cd.minWidth - w.measuredWidth) / 2);
+                        }
+                        else if ((alignment & Align.Right) == Align.Right) {
+                            r.left += (cd.minWidth - w.measuredWidth);
+                        }
+                    }
+                    r.right = r.left + w.measuredWidth;
+
+                    r.top = y0;
+                    if (w.measuredHeight < rd.minHeight){
+                        if ((alignment & Align.VCenter) == Align.VCenter) {
+                            r.top += ((rd.minHeight - w.measuredHeight) / 2);
+                        }
+                        else if ((alignment & Align.Bottom) == Align.Bottom) {
+                            r.top += (rd.minHeight - w.measuredHeight);
+                        }
+                    }
+                    r.bottom = r.top + w.measuredHeight;
+
+                    w.layout(r);
+                }
+                else {
+                    r.left = r.left + x0;
+                    r.top = r.top + y0;
+                }
+                x0 += cd.minWidth;
+            }
+            y0 += rd.minHeight;
+        }
     }
 
 }
