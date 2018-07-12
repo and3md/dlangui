@@ -395,14 +395,6 @@ class GridWidgetBase : ScrollWidgetBase, GridModelAdapter, MenuItemActionHandler
     protected DrawableRef _cellRowHeaderBackgroundDrawable;
     protected DrawableRef _cellRowHeaderSelectedBackgroundDrawable;
 
-    protected int _startWidth = 0;
-    protected int _startHeight = 0;
-    protected bool _firstMeasure = true;
-
-    void resetStartSize() {
-        _firstMeasure = true;
-    }
-
     /// row header column count
     @property int headerCols() { return _headerCols; }
     @property GridWidgetBase headerCols(int c) {
@@ -1614,38 +1606,48 @@ class GridWidgetBase : ScrollWidgetBase, GridModelAdapter, MenuItemActionHandler
     }
 
 
-    /// calculate minimum size of widget
-    override void measureMinSize() {
+    override void measureMinWidth() {
         if (_cols == 0 || _rows == 0) {
-            adjustMeasuredMinSize(100, 100);
+            adjustMeasuredMinWidth(100);
             return;
         }
 
-        if (_firstMeasure) {
-        Point sz;
+        int mw = 0;
         int firstVisibleCol = (showRowHeaders) ? 0 : _headerCols;
         for (int i = firstVisibleCol ; i < min(_cols, _minVisibleCols + firstVisibleCol) ; i++)
-            sz.x += _colWidths[i];
+            mw += _colWidths[i];
 
-        // height
-        int firstVisibleRow = (showColHeaders) ? 0 : _headerRows;
-        for (int i = firstVisibleRow ; i < min(_rows, _minVisibleRows + firstVisibleRow) ; i++)
-            sz.y += _rowHeights[i];
-
-        if (_rows<_minVisibleRows)
-            sz.y += (_minVisibleRows - _rows) * _rowHeights[_rows-1];
-
-        // do not adjust here
-        _measuredMinWidth = sz.x;
-        _measuredMinHeight = sz.y;
-        _startWidth = sz.x;
-        _startHeight = sz.y;
-        _firstMeasure = false;
-        }
-        _measuredMinWidth = _startWidth;
-        _measuredMinHeight = _startHeight;
+        adjustMeasuredMinWidth(mw);
     }
 
+
+    override void measureWidth(int parentWidth) {
+        adjustMeasuredWidth(parentWidth, _measuredMinWidth);
+    }
+
+
+    override void measureMinHeight(int widgetWidth) {
+        if (_cols == 0 || _rows == 0) {
+            adjustMeasuredMinHeight(100);
+            return;
+        }
+
+        int mh = 0;
+        int firstVisibleRow = (showColHeaders) ? 0 : _headerRows;
+        for (int i = firstVisibleRow ; i < min(_rows, _minVisibleRows + firstVisibleRow) ; i++)
+            mh += _rowHeights[i];
+
+        if (_rows<_minVisibleRows)
+            mh += (_minVisibleRows - _rows) * _rowHeights[_rows-1];
+
+        adjustMeasuredMinHeight(mh);
+    }
+
+    override void measureHeight(int parentHeight) {
+        adjustMeasuredHeight(parentHeight, _measuredMinHeight);
+    }
+    
+    
     override protected void drawClient(DrawBuf buf) {
         if (!_cols || !_rows)
             return; // no cells
