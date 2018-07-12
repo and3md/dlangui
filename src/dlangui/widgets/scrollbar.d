@@ -872,29 +872,81 @@ class SliderWidget : AbstractSlider, OnClickHandler {
         _pageDown.click = &onClick;
     }
 
-    override void measureSize(int parentWidth, int parentHeight) {
-        Point sz;
-        _indicator.measureSize(parentWidth, parentHeight);
-        _pageUp.measureSize(parentWidth, parentHeight);
-        _pageDown.measureSize(parentWidth, parentHeight);
-        _minIndicatorSize = _orientation == Orientation.Vertical ? _indicator.measuredHeight : _indicator.measuredWidth;
-        _btnSize = _minIndicatorSize;
+    override void measureMinWidth() {
+        _indicator.measureMinWidth();
+        _pageUp.measureMinWidth();
+        _pageDown.measureMinWidth();
+        _btnSize = _pageUp.measuredMinWidth;
+
+        if (_orientation == Orientation.Vertical) 
+            _minIndicatorSize = _indicator.measuredMinWidth;
+        else 
+           _minIndicatorSize = 0;
+        
         if (_btnSize < _minIndicatorSize)
             _btnSize = _minIndicatorSize;
         static if (BACKEND_GUI) {
             if (_btnSize < 16)
                 _btnSize = 16;
         }
-        if (_orientation == Orientation.Vertical) {
-            // vertical
-            sz.x = _btnSize;
-            sz.y = _btnSize * 5; // min height
-        } else {
-            // horizontal
-            sz.y = _btnSize;
-            sz.x = _btnSize * 5; // min height
-        }
-        adjustMeasuredSize(parentWidth, parentHeight, sz.x, sz.y);
+
+        int mw;
+        if (_orientation == Orientation.Vertical)
+            mw = _btnSize;
+        else
+            mw = _btnSize * 5;
+
+        adjustMeasuredMinWidth(mw);
+    }
+
+    override void measureWidth(int parentWidth) {
+        Rect m = margins;
+        Rect p = padding;
+        int pwidth = parentWidth;
+        pwidth -= m.left + m.right + p.left + p.right;
+        int w = 0;
+
+        _indicator.measureWidth(_indicator.measuredMinWidth);
+        _pageUp.measureWidth(_pageUp.measuredMinWidth);
+        _pageDown.measureWidth(_pageDown.measuredMinWidth);
+        
+        adjustMeasuredWidth(parentWidth, _measuredMinWidth);
+    }
+
+    override void measureMinHeight(int width) {
+        Rect m = margins;
+        Rect p = padding;
+        int w = width;
+        w -= m.left + m.right + p.left + p.right;
+
+        _indicator.measureMinHeight(w);
+        _pageUp.measureMinHeight(w);
+        _pageDown.measureMinHeight(w);
+
+        if (_orientation == Orientation.Horizontal) 
+            _minIndicatorSize = _indicator.measuredMinHeight;
+ 
+        
+        int mh = 0;
+        if (_orientation == Orientation.Vertical)
+            mh = _btnSize * 5;
+        else
+            mh = _btnSize;
+
+        adjustMeasuredMinHeight(mh);
+    }
+
+    override void measureHeight(int parentHeight) {
+        Rect m = margins;
+        Rect p = padding;
+        int pheight = parentHeight;
+        pheight -= m.top + m.bottom + p.top + p.bottom;
+
+        _indicator.measureMinHeight(pheight);
+        _pageUp.measureMinHeight(pheight);
+        _pageDown.measureMinHeight(pheight);
+
+        adjustMeasuredHeight(parentHeight, _measuredMinHeight); // adjustMeasuredHeight do not adds padings and margins
     }
 
     override protected void onPositionChanged() {
