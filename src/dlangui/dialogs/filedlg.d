@@ -782,7 +782,7 @@ class FileDialog : Dialog, CustomGridCellAdapter {
         content.addChild(rightPanel);
 
         _edPath = new FilePathPanel("path");
-        _edPath.layoutWidth(WRAP_CONTENT);
+        _edPath.layoutWidth(FILL_PARENT);
         _edPath.onPathSelectionListener = &onPathSelected;
         HorizontalLayout fnlayout = new HorizontalLayout();
         fnlayout.layoutWidth(FILL_PARENT);
@@ -1028,58 +1028,74 @@ class FilePathPanelButtons : WidgetGroupDefaultDrawing {
         }
     }
 
-    override bool heightDependOnWidth() {
-        return true;
-    }
-
-    override void measureMinSize() {
+    override void measureMinWidth() {
         int reservedForEmptySpace = 4.pointsToPixels;
 
         if (childCount > 0) {
             Widget item = child(0);
-            item.measureMinSize();
-            adjustMeasuredMinSize(item.measuredMinWidth + reservedForEmptySpace, item.measuredMinHeight);
+            item.measureMinWidth();
+            adjustMeasuredMinWidth(item.measuredMinWidth + reservedForEmptySpace);
         }
         else
-            adjustMeasuredMinSize(reservedForEmptySpace + 100, 1);
+            adjustMeasuredMinWidth(reservedForEmptySpace + 100);
     }
-    
-    /// Measure widget according to desired width and height constraints. (Step 1 of two phase layout).
-    override void measureSize(int parentWidth, int parentHeight) {
+
+    override void measureWidth(int parentWidth) {
         Rect m = margins;
         Rect p = padding;
+        int pwidth = parentWidth - (m.left + m.right + p.left + p.right);
 
-        // calc size constraints for children
-        int pwidth = 0;
-        int pheight = 0;
-        if (parentWidth != SIZE_UNSPECIFIED)
-            pwidth = parentWidth - (m.left + m.right + p.left + p.right);
-
-        if (parentHeight != SIZE_UNSPECIFIED)
-            pheight = parentHeight - (m.top + m.bottom + p.top + p.bottom);
         int reservedForEmptySpace = parentWidth / 20;
         if (reservedForEmptySpace > 40.pointsToPixels)
             reservedForEmptySpace = 40.pointsToPixels;
         if (reservedForEmptySpace < 4.pointsToPixels)
             reservedForEmptySpace = 4.pointsToPixels;
 
-        Point sz;
-        sz.x += reservedForEmptySpace;
+        int w = reservedForEmptySpace;
         // measure children
         bool exceeded = false;
         for (int i = 0; i < _children.count; i++) {
             Widget item = _children.get(i);
-            item.measureSize(pwidth, pheight);
-            if (sz.y < item.measuredHeight)
-                sz.y = item.measuredHeight;
-            if (sz.x + item.measuredWidth > pwidth) {
+            item.measureMinWidth();
+            item.measureWidth(pwidth);
+            if (w + item.measuredWidth > pwidth) {
                 exceeded = true;
             }
             if (!exceeded || i == 0) // at least one item must be measured
-                sz.x += item.measuredWidth;
+                w += item.measuredWidth;
         }
-        adjustMeasuredSize(parentWidth, parentHeight, sz.x, sz.y);
+        adjustMeasuredWidth(parentWidth, w + m.left + m.right + p.left + p.right);
     }
+
+    override void measureMinHeight(int widgetWidth) {
+        int mh = 0;
+        for (int i = 0; i < _children.count; i++) {
+            Widget item = _children.get(i);
+
+            item.measureMinHeight(item.measuredWidth);
+            if (mh < item.measuredMinHeight)
+                mh = item.measuredMinHeight;
+        }
+        adjustMeasuredMinHeight(mh);
+    }
+
+    override void measureHeight(int parentHeight) {
+        Rect m = margins;
+        Rect p = padding;
+
+        int pheight = parentHeight - (m.top + m.bottom + p.top + p.bottom);
+        
+        int h = 0;
+        for (int i = 0; i < _children.count; i++) {
+            Widget item = _children.get(i);
+
+            item.measureHeight(pheight);
+            if (h < item.measuredHeight)
+                h = item.measuredHeight;
+        }
+        adjustMeasuredHeight(parentHeight, h + m.top + m.bottom + p.top + p.bottom);
+    }
+    
     /// Set widget rectangle to specified value and layout widget contents. (Step 2 of two phase layout).
     override void layout(Rect rc) {
         //Log.d("tabControl.layout enter");
@@ -1104,7 +1120,6 @@ class FilePathPanelButtons : WidgetGroupDefaultDrawing {
         for (int i = 0; i < _children.count; i++) {
             Widget item = _children.get(i);
             item.visibility = Visibility.Visible;
-            item.measureSize(rc.width, rc.height);
             if (totalw + item.measuredWidth > rc.width) {
                 exceeded = true;
             }
