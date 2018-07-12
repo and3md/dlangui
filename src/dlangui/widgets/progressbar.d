@@ -144,11 +144,15 @@ class ProgressBarWidget : AbstractProgressBar {
         styleId = STYLE_PROGRESS_BAR;
     }
 
-    /**
-    Measure widget according to desired width and height constraints. (Step 1 of two phase layout).
+    override void measureMinWidth() {
+        adjustMeasuredMinWidth(0);
+    }
 
-    */
-    override void measureSize(int parentWidth, int parentHeight) {
+    override void measureWidth(int parentWidth) {
+        adjustMeasuredWidth(parentWidth, _measuredMinWidth);
+    }
+
+    override void measureMinHeight(int widgetWidth) {
         int h = 0;
         int w = 0;
         DrawableRef gaugeDrawable = style.customDrawable("progress_bar_gauge");
@@ -161,10 +165,14 @@ class ProgressBarWidget : AbstractProgressBar {
             if (h < indeterminateDrawable.height)
                 h = indeterminateDrawable.height;
         }
-        adjustMeasuredSize(parentWidth, parentHeight, w, h);
+        
+        adjustMeasuredMinHeight(h);
     }
 
-
+    override void measureHeight(int parentHeight) {
+        adjustMeasuredHeight(parentHeight, _measuredMinHeight);
+    }
+    
     /// Draw widget at its position to buffer
     override void onDraw(DrawBuf buf) {
         if (visibility != Visibility.Visible)
