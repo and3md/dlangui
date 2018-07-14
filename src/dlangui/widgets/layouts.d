@@ -155,7 +155,7 @@ class LayoutItems {
             for (int i = 0; i < _count; i++) {
                 LayoutItem * item = &_list[i];
 
-                item.measureMinHeight(width);
+                item.measureMinHeight(item._measuredWidth);
                 if (_totalSize < item._measuredMinHeight)
                     _totalSize = item._measuredMinHeight;
             }
@@ -165,7 +165,7 @@ class LayoutItems {
             for (int i = 0; i < _count; i++) {
                 LayoutItem * item = &_list[i];
 
-                item.measureMinHeight(width);
+                item.measureMinHeight(item._measuredWidth);
                 _totalSize += item._measuredMinHeight;
             }
         }
@@ -190,14 +190,14 @@ class LayoutItems {
             else {
                 int extraSpaceRemained = extraSpace;
                 int extraSpaceStep = extraSpace / layoutWeightSum;
-            
+
                 // maybe we need add step sum to not exceed extraSpace due to rounds
                 for (int i = 0; i < _count; i++) {
                     LayoutItem * item = &_list[i];
 
                     if (item.layoutWidth == FILL_PARENT)
                         item.measureWidth(item._measuredMinWidth + extraSpaceStep * item.weight);
-                    else
+                    else 
                         item.measureWidth(item._measuredMinWidth);
 
                     _totalSize += item._measuredWidth;
@@ -222,7 +222,6 @@ class LayoutItems {
 
         }
         return _totalSize;
-
     }
 
 
