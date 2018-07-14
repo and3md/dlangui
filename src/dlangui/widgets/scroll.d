@@ -267,16 +267,22 @@ class ScrollWidgetBase :  WidgetGroup, OnScrollHandler {
         _needDraw = false;
     }
 
+    protected Point _fullContentSize;
+    
     /// calculate full content size in pixels
-    Point fullContentSize() {
+    void measureFullContentSize() {
         // override it
-        Point sz;
-        return sz;
+        _fullContentSize.destroy();
+    }
+
+    // only get 
+    final Point fullContentSize() {
+        return _fullContentSize;
     }
 
     /// calculate full content size in pixels including widget borders / margins
     Point fullContentSizeWithBorders() {
-        Point sz = fullContentSize;
+        Point sz = _fullContentSize;
         Rect paddingrc = padding;
         Rect marginsrc = margins;
         sz.x += paddingrc.left + paddingrc.right + marginsrc.left + marginsrc.right;
@@ -290,6 +296,11 @@ class ScrollWidgetBase :  WidgetGroup, OnScrollHandler {
 
     override void measureMinContentHeight(int width) {
         _measuredMinContentHeight = 100;
+    }
+
+    override void measureMinWidth() {
+        measureFullContentSize();
+        super.measureMinWidth();
     }
 
     /// override to support modification of client rect after change, e.g. apply offset
@@ -465,22 +476,20 @@ class ScrollWidget :  ScrollWidgetBase {
         super(ID, hscrollbarMode, vscrollbarMode);
     }
 
-    /// calculate full content size in pixels
-    override Point fullContentSize() {
+    override void measureFullContentSize() {
         // override it
-        Point sz;
+        _fullContentSize.destroy();
         if (_contentWidget) {
             _contentWidget.measureMinWidth();
             _contentWidget.measureWidth(_contentWidget.measuredMinWidth);
             _contentWidget.measureMinHeight(_contentWidget.measuredMinWidth);
             _contentWidget.measureHeight(_contentWidget.measuredMinHeight);
-            sz.x = _contentWidget.measuredWidth;
-            sz.y = _contentWidget.measuredHeight;
+            _fullContentSize.x = _contentWidget.measuredWidth;
+            _fullContentSize.y = _contentWidget.measuredHeight;
             
         }
-        _fullScrollableArea.right = sz.x;
-        _fullScrollableArea.bottom = sz.y;
-        return sz;
+        _fullScrollableArea.right = _fullContentSize.x;
+        _fullScrollableArea.bottom = _fullContentSize.y;
     }
 
     /// update scrollbar positions

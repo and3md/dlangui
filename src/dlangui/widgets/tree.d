@@ -871,6 +871,7 @@ class TreeWidgetBase :  ScrollWidget, OnTreeContentChangeListener, OnTreeStateCh
     }
 
     override void measureMinWidth() {
+        measureFullContentSize();
         adjustMeasuredMinWidth(100.pointsToPixels);
     }
 
@@ -879,14 +880,19 @@ class TreeWidgetBase :  ScrollWidget, OnTreeContentChangeListener, OnTreeStateCh
     }
    
     /// calculate full content size in pixels
-    override Point fullContentSize() {
+    override void measureFullContentSize() {
         if (_needUpdateWidgets)
             updateWidgets();
         if (_needUpdateWidgetStates)
             updateWidgetStates();
-        return super.fullContentSize();
+        super.measureFullContentSize();
     }
 
+    override protected void updateScrollBars() {
+        measureFullContentSize();
+        super.updateScrollBars();
+    }
+    
     /// listener
     override void onTreeContentChange(TreeItems source) {
         _needUpdateWidgets = true;

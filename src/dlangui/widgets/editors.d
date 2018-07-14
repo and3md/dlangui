@@ -3397,14 +3397,14 @@ class EditBox : EditWidgetBase {
     }
 
     /// calculate full content size in pixels
-    override Point fullContentSize() {
-        Point textSz;
-        textSz.y = _lineHeight * cast(int)_span.length;
-        textSz.x = _maxLineWidth;
+    override void measureFullContentSize() {
+        _fullContentSize.x = 0;
+        _fullContentSize.y = 0;
+        _fullContentSize.y = _lineHeight * cast(int)_span.length;
+        _fullContentSize.x = _maxLineWidth;
         //int maxy = _lineHeight * 5; // limit measured height
         //if (textSz.y > maxy)
         //    textSz.y = maxy;
-        return textSz;
     }
 
     override void measureMinContentWidth() {

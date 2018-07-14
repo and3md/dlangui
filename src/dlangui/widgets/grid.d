@@ -1571,13 +1571,12 @@ class GridWidgetBase : ScrollWidgetBase, GridModelAdapter, MenuItemActionHandler
     }
 
     /// calculate full content size in pixels
-    override Point fullContentSize() {
-        Point sz;
+    override void measureFullContentSize() {
+        _fullContentSize.destroy();
         for (int i = 0; i < _cols; i++)
-            sz.x += _colWidths[i];
+            _fullContentSize.x += _colWidths[i];
         for (int i = 0; i < _rows; i++)
-            sz.y += _rowHeights[i];
-        return sz;
+            _fullContentSize.y += _rowHeights[i];
     }
 
     protected int _minVisibleCols = 2;
