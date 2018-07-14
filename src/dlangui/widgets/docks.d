@@ -296,7 +296,7 @@ class DockHost : WidgetGroupDefaultDrawing {
     override void measureWidth(int parentWidth) {
         Rect m = margins;
         Rect p = padding;
-        int pwidth  = parentWidth - m.left + m.right + p.left + p.right;
+        int pwidth  = parentWidth - (m.left + m.right + p.left + p.right);
 
         int w = 0;
         if (_bodyWidget) {
@@ -341,7 +341,7 @@ class DockHost : WidgetGroupDefaultDrawing {
         Rect m = margins;
         Rect p = padding;
 
-        int pheight = parentHeight - m.top + m.bottom + p.top + p.bottom;
+        int pheight = parentHeight - (m.top + m.bottom + p.top + p.bottom);
 
         int h = 0;
         if (_bodyWidget) {

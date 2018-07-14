@@ -904,7 +904,7 @@ class TableLayout : WidgetGroupDefaultDrawing {
     override void measureWidth(int parentWidth) {
         Rect m = margins;
         Rect p = padding;
-        int pwidth = parentWidth - m.left + m.right + p.left + p.right;
+        int pwidth = parentWidth - (m.left + m.right + p.left + p.right);
         int totalWidth = 0;
 
         int extraSpace = pwidth - _totalColMinWidth;
@@ -975,7 +975,7 @@ class TableLayout : WidgetGroupDefaultDrawing {
     override void measureHeight(int parentHeight) {
         Rect m = margins;
         Rect p = padding;
-        int pheight = parentHeight - m.top + m.bottom + p.top + p.bottom;
+        int pheight = parentHeight - (m.top + m.bottom + p.top + p.bottom);
         int totalHeight = 0;
 
         int extraSpace = parentHeight - _totalRowMinHeight;
