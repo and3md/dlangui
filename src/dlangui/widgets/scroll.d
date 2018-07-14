@@ -275,7 +275,7 @@ class ScrollWidgetBase :  WidgetGroup, OnScrollHandler {
         _fullContentSize.destroy();
     }
 
-    // only get 
+    // only get not measure!
     final Point fullContentSize() {
         return _fullContentSize;
     }

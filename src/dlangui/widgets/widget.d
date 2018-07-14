@@ -1519,7 +1519,7 @@ public:
     }
 
 
-    void measureMinContentHeight(int width) {
+    void measureMinContentHeight(int widgetWidth) {
         _measuredMinContentHeight = 0;
     }
 

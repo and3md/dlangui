@@ -126,6 +126,17 @@ class TextWidget : Widget {
             _measuredMinContentWidth = _widthForMinContentSize;
     }
 
+    protected int _lastMEasuredWidgetWidth = -1;
+    override void measureMinHeight(int widgetWidth) {
+        if (_lastMEasuredWidgetWidth != widgetWidth) {
+            _lastMEasuredWidgetWidth = widgetWidth;
+            _needMeasureMinContent = true;
+        }
+
+        measureMinContentHeight(widgetWidth);
+        adjustMeasuredMinHeight(_measuredMinContentHeight);
+    }
+
     override void measureMinContentHeight(int width) {
         if (maxLines == 1)
             return;
@@ -134,8 +145,7 @@ class TextWidget : Widget {
             return;
         Rect m = margins;
         Rect p = padding;
-        int w = width;
-        w -= m.left + m.right + p.left + p.right;
+        int w = width - (m.left + m.right + p.left + p.right);
 
         Point sz;
         sz = font.measureMultilineText(text, maxLines, w, 4, 0, textFlags);
@@ -143,7 +153,6 @@ class TextWidget : Widget {
         _measuredMinContentHeight = sz.y;
         _needMeasureMinContent = false;
     }
-    
 
     private int _widthForMinContentSize = 70;
 
