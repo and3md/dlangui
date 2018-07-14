@@ -117,6 +117,14 @@ enum WindowOrContentResizeMode {
     scrollWindow
 }
 
+/// Sets how minimum widget size is updated.
+enum MinSizeUpdateMode {
+    /// minimum widget size is updated on all layout requests (set if your window frequently change min widgets size
+    automatic,
+    /// minimum widget size is measured only once at window create, if you want update it call updateMinSize()
+    manual
+}
+
 /// Window state signal listener
 interface OnWindowStateHandler {
     /// signal listener - called when state of window is changed
@@ -358,6 +366,22 @@ class Window : CustomEventTarget {
         }
     }
 
+    /// minimum window size update mode
+    protected MinSizeUpdateMode _minSizeUpdateMode = MinSizeUpdateMode.manual;
+    //protected MinSizeUpdateMode _minSizeUpdateMode = MinSizeUpdateMode.automatic;
+    
+    ///returns minimum window size update mode
+    @property MinSizeUpdateMode minSizeUpdateMode() {return _minSizeUpdateMode; }
+
+    ///sets minimum window size update mode
+    @property void minSizeUpdateMode(MinSizeUpdateMode newMode) {
+        if (_minSizeUpdateMode != newMode) {
+            _minSizeUpdateMode = newMode;
+            if (_mainWidget && _minSizeUpdateMode == MinSizeUpdateMode.automatic)
+                _mainWidget.requestLayout();
+        }
+    }
+
     protected ShowPosition _showPosition = ShowPosition.parentWindowCenter;
 
     ///returns current window show position (don't care or parent center)
@@ -474,18 +498,29 @@ class Window : CustomEventTarget {
     /// horizontal scrollbar control
     protected ScrollBar _hScrollBar = null;
 
-    /// remeasure min window or content size, for example after add a lot of widgets to main window layout (minimal size can change).
-    void remeasureMinWindowOrContentSize() {
+    /// update min window or content size, for example after add a lot of widgets to main window layout or theme change (minimal size can change)
+    void updateMinSize() {
         _mainWidget.measureMinWidth();
         _mainWidget.measureWidth(_mainWidget.measuredMinWidth);
         _mainWidget.measureMinHeight(_mainWidget.measuredWidth);
         _mainWidget.measureHeight(_mainWidget.measuredMinHeight);
 
-        adjustWindowOrContentSize(_mainWidget.measuredWidth, _mainWidget.measuredHeight);
+        if (_windowOrContentResizeMode == WindowOrContentResizeMode.scrollWindow) {
+            // do not change window size when there are scrollbars
+            if (_minContentWidth != _mainWidget.measuredWidth || _minContentHeight != _mainWidget.measuredHeight) {
+                _minContentWidth = _mainWidget.measuredWidth;
+                _minContentHeight = _mainWidget.measuredHeight;
+                updateWindowOrContentSize();
+            }
+        }
+        else
+            adjustWindowOrContentSize(_mainWidget.measuredWidth, _mainWidget.measuredHeight);
     }
     
     /// Sets the minimal content size and adjust window or content should be called from window show
     void adjustWindowOrContentSize(int minContentWidth, int minContentHeight) {
+        if (_minContentWidth == _mainWidget.measuredWidth && _minContentHeight == _mainWidget.measuredHeight)
+            return;
         _minContentWidth = minContentWidth;
         _minContentHeight = minContentHeight;
         Log.d("Min content w: ", _minContentWidth, " h: ", _minContentHeight);
@@ -634,22 +669,10 @@ class Window : CustomEventTarget {
         }
 
         if (_mainWidget !is null) {
-            /*_mainWidget.measureMinSize(); // after measure min size only width is ok, but height can be not real (like multiline text with fill parent width)
-            // some times min window size changes after for example add a lot of widgets, or some widget grow, so we need check minimal size first, and update window scrolls:
-            _mainWidget.measureSize(_mainWidget.measuredMinWidth, _mainWidget.measuredMinHeight);
-            if (_minContentWidth != _mainWidget.measuredWidth || _minContentHeight != _mainWidget.measuredHeight) {
-                _minContentWidth = _mainWidget.measuredWidth;
-                _minContentHeight = _mainWidget.measuredHeight;
-                updateWindowOrContentSize();
-            }*/
-            _mainWidget.measureMinWidth();
-            _mainWidget.measureWidth(_mainWidget.measuredMinWidth);
-            _mainWidget.measureMinHeight(_mainWidget.measuredWidth);
-            _mainWidget.measureHeight(_mainWidget.measuredMinHeight);
-            if (_minContentWidth != _mainWidget.measuredWidth || _minContentHeight != _mainWidget.measuredHeight) {
-                _minContentWidth = _mainWidget.measuredWidth;
-                _minContentHeight = _mainWidget.measuredHeight;
-                updateWindowOrContentSize();
+            // some times min window size changes after for example add a lot of widgets, or some widget grow, so if you window widgets change frequetly use automatic min size update
+            if (_minSizeUpdateMode == MinSizeUpdateMode.automatic) {
+                
+                updateMinSize();
             }
             // real widget measure:
             _mainWidget.measureMinWidth();
