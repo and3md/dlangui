@@ -2912,7 +2912,7 @@ class EditBox : EditWidgetBase {
         Rect contentRc = rc;
         int findPanelHeight;
         if (_findPanel && _findPanel.visibility != Visibility.Gone) {
-            _findPanel.measureSize(rc.width, rc.height);
+            //_findPanel.measureSize(rc.width, rc.height);
             findPanelHeight = _findPanel.measuredHeight;
             _findPanel.layout(Rect(rc.left, rc.bottom - findPanelHeight, rc.right, rc.bottom));
             contentRc.bottom -= findPanelHeight;

@@ -441,30 +441,13 @@ class ResizerWidget : Widget {
         }
     }
 
-
-    override void measureMinContentSize() {
-        if (!_needMeasureMinContent)
-            return;
-
-        _measuredMinContentWidth = 7;
-        _measuredMinContentHeight = 7;
-        _needMeasureMinContent = false;
+    override void measureMinWidth() {
+        updateProps();
+        adjustMeasuredMinWidth(7);
     }
 
-    override void measureMinSize() {
-        updateProps();
-        measureMinContentSize();
-        adjustMeasuredMinSize(_measuredMinContentWidth, _measuredMinContentHeight);
-    }
-    
-    /**
-       Measure widget according to desired width and height constraints. (Step 1 of two phase layout).
-
-    */
-    override void measureSize(int parentWidth, int parentHeight) {
-        updateProps();
-        measureMinContentSize();
-        adjustMeasuredSize(parentWidth, parentHeight, _measuredMinContentWidth, _measuredMinContentHeight);
+    override void measureMinHeight(int widgetWidth) {
+        adjustMeasuredMinHeight(7);
     }
 
     /// Set widget rectangle to specified value and layout widget contents. (Step 2 of two phase layout).

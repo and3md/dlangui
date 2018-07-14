@@ -350,8 +350,10 @@ class Window : CustomEventTarget {
     @property void windowOrContentResizeMode(WindowOrContentResizeMode newMode) {
         _windowOrContentResizeMode = newMode;
         if (_mainWidget) {
-            _mainWidget.measureMinSize();
-            _mainWidget.measureSize(_mainWidget.measuredMinWidth, _mainWidget.measuredMinWidth);
+            _mainWidget.measureMinWidth();
+            _mainWidget.measureWidth(_mainWidget.measuredMinWidth);
+            _mainWidget.measureMinHeight(_mainWidget.measuredWidth);
+            _mainWidget.measureHeight(_mainWidget.measuredMinHeight);
             adjustWindowOrContentSize(_mainWidget.measuredWidth, _mainWidget.measuredHeight);
         }
     }
@@ -474,11 +476,10 @@ class Window : CustomEventTarget {
 
     /// remeasure min window or content size, for example after add a lot of widgets to main window layout (minimal size can change).
     void remeasureMinWindowOrContentSize() {
-        _mainWidget.measureMinSize();
-        _mainWidget.measureSize(_mainWidget.measuredMinWidth, _mainWidget.measuredMinHeight);
-
-        if (flags & WindowFlag.MeasureSize)
-            resizeWindow(Point(_mainWidget.measuredWidth, _mainWidget.measuredHeight));
+        _mainWidget.measureMinWidth();
+        _mainWidget.measureWidth(_mainWidget.measuredMinWidth);
+        _mainWidget.measureMinHeight(_mainWidget.measuredWidth);
+        _mainWidget.measureHeight(_mainWidget.measuredMinHeight);
 
         adjustWindowOrContentSize(_mainWidget.measuredWidth, _mainWidget.measuredHeight);
     }

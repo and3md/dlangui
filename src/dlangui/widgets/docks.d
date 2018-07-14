@@ -275,40 +275,92 @@ class DockHost : WidgetGroupDefaultDrawing {
             _bodyWidget.layout(Rect(rc.left + _leftSpace.space, rc.top + _topSpace.space, rc.right - _rightSpace.space, rc.bottom - _bottomSpace.space));
     }
 
-    /// Measure widget according to desired width and height constraints. (Step 1 of two phase layout).
-    override void measureSize(int parentWidth, int parentHeight) {
-        Rect m = margins;
-        Rect p = padding;
-        // calc size constraints for children
-        int pwidth = parentWidth;
-        int pheight = parentHeight;
-        if (parentWidth != SIZE_UNSPECIFIED)
-            pwidth -= m.left + m.right + p.left + p.right;
-        if (parentHeight != SIZE_UNSPECIFIED)
-            pheight -= m.top + m.bottom + p.top + p.bottom;
-        // measure children
-        Point sz;
-        Point bodySize;
+    override void measureMinWidth() {
+        int mw = 0;
         if (_bodyWidget) {
-            _bodyWidget.measureMinSize();
-            _bodyWidget.measureSize(pwidth, pheight);
-            bodySize.x = _bodyWidget.measuredWidth;
-            bodySize.y = _bodyWidget.measuredHeight;
+            _bodyWidget.measureMinWidth();
+            mw = _bodyWidget.measuredMinWidth;
         }
         for (int i = 0; i < _children.count; i++) {
             Widget item = _children.get(i);
             // TODO: fix
             if (item.visibility != Visibility.Gone) {
-                item.measureMinSize();
-                item.measureSize(pwidth, pheight);
-                if (sz.x < item.measuredWidth)
-                    sz.x = item.measuredWidth;
-                if (sz.y < item.measuredHeight)
-                    sz.y = item.measuredHeight;
+                item.measureMinWidth();
+                if (mw < item.measuredMinWidth)
+                    mw = item.measuredMinWidth;
             }
         }
-        adjustMeasuredSize(parentWidth, parentHeight, sz.x, sz.y);
+        adjustMeasuredMinWidth(mw);
     }
+
+    override void measureWidth(int parentWidth) {
+        Rect m = margins;
+        Rect p = padding;
+        int pwidth  = parentWidth - m.left + m.right + p.left + p.right;
+
+        int w = 0;
+        if (_bodyWidget) {
+            //_bodyWidget.measureWidth(_bodyWidget.measuredMinWidth);
+            _bodyWidget.measureWidth(pwidth);
+            w = _bodyWidget.measuredWidth;
+        }
+
+        for (int i = 0; i < _children.count; i++) {
+            Widget item = _children.get(i);
+            // TODO: fix
+            if (item.visibility != Visibility.Gone) {
+                //item.measureWidth(item.measuredMinWidth);
+                item.measureWidth(pwidth);
+                if (w < item.measuredWidth)
+                    w = item.measuredWidth;
+            }
+        }
+        adjustMeasuredWidth(parentWidth, w + m.left + m.right + p.left + p.right);
+    }
+
+    override void measureMinHeight(int widgetWidth) {
+        int mh = 0;
+        if (_bodyWidget) {
+            _bodyWidget.measureMinHeight(_bodyWidget.measuredWidth);
+            mh = _bodyWidget.measuredMinHeight;
+        }
+
+        for (int i = 0; i < _children.count; i++) {
+            Widget item = _children.get(i);
+            // TODO: fix
+            if (item.visibility != Visibility.Gone) {
+                item.measureMinHeight(item.measuredWidth);
+                if (mh < item.measuredMinHeight)
+                    mh = item.measuredMinHeight;
+            }
+        }
+        adjustMeasuredMinHeight(mh);
+    }
+
+    override void measureHeight(int parentHeight) {
+        Rect m = margins;
+        Rect p = padding;
+
+        int pheight = parentHeight - m.top + m.bottom + p.top + p.bottom;
+
+        int h = 0;
+        if (_bodyWidget) {
+            _bodyWidget.measureHeight(pheight);
+            h = _bodyWidget.measuredHeight;
+        }
+
+        for (int i = 0; i < _children.count; i++) {
+            Widget item = _children.get(i);
+            // TODO: fix
+            if (item.visibility != Visibility.Gone) {
+                item.measureHeight(item.measuredWidth);
+                if (h < item.measuredHeight)
+                    h = item.measuredHeight;
+            }
+        }
+        adjustMeasuredHeight(parentHeight, h + m.top + m.bottom + p.top + p.bottom);
+    }
+    
 }
 
 /// docked window
