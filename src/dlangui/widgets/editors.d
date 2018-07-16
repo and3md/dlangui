@@ -1306,6 +1306,7 @@ class EditWidgetBase : ScrollWidgetBase, EditableContentListener, MenuItemAction
         _content.contentChanged.connect(this);
         if (_content.readOnly)
             enabled = false;
+        wrapContent();
         return this;
     }
 
