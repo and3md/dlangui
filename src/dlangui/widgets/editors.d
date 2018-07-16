@@ -3860,6 +3860,7 @@ class EditBox : EditWidgetBase {
         //// bool doRewrap = false;
         if (_needRewrap && _wordWrap)
         {
+            updateMaxLineWidth();
             wrapContent();
             measureVisibleText();
             updateVScrollBar();
