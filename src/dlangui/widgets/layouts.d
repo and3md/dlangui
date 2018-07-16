@@ -92,12 +92,13 @@ class LayoutItems {
     ubyte _alignment;
     LayoutItem[] _list;
     int _count;
-    int _totalSize;
     int itemsMinWidthSum;
     int itemsMinHeightSum;
     int layoutWeightSum;
     int _layoutWidth;
     int _layoutHeight;
+    int _totalWidth;
+    int _totalHeight;
 
     void setLayoutParams(Orientation orientation, int layoutWidth, int layoutHeight, ubyte alignment) {
         _orientation = orientation;
@@ -108,7 +109,7 @@ class LayoutItems {
 
     int measureMinWidth() {
         layoutWeightSum = 0;
-        _totalSize = 0;
+        int _totalSize = 0;
         itemsMinWidthSum = 0;
 
         if (_orientation == Orientation.Horizontal) {
@@ -122,7 +123,6 @@ class LayoutItems {
                 }
 
                  _totalSize += item._measuredMinWidth;
-                //Log.d("item size ", item._measuredMinSize);
             }
         }
         else {
@@ -137,7 +137,6 @@ class LayoutItems {
 
                 if (_totalSize < item._measuredMinWidth)
                     _totalSize = item._measuredMinWidth;
-                //Log.d("item size ", item._measuredMinSize);
             }
             
         }
@@ -147,7 +146,7 @@ class LayoutItems {
 
     /// fill widget layout list with Visible or Invisible items, measure them
     int measureMinHeight(int width) {
-        _totalSize = 0;
+        int _totalSize = 0;
         itemsMinHeightSum = 0;
         
         if (_orientation == Orientation.Horizontal) {
@@ -174,7 +173,7 @@ class LayoutItems {
     }
 
     int measureWidth(int parentWidth) {
-        _totalSize = 0;
+        _totalWidth = 0;
 
         if (_orientation == Orientation.Horizontal) {
             int extraSpace = 0;
@@ -184,7 +183,7 @@ class LayoutItems {
                     LayoutItem * item = &_list[i];
 
                     item.measureWidth(item._measuredMinWidth);
-                    _totalSize += item._measuredWidth;
+                    _totalWidth += item._measuredWidth;
                 }
             }
             else {
@@ -200,9 +199,10 @@ class LayoutItems {
                     else 
                         item.measureWidth(item._measuredMinWidth);
 
-                    _totalSize += item._measuredWidth;
+                    _totalWidth += item._measuredWidth;
                 }
             }
+            
         }
         else {
             // vertical
@@ -216,17 +216,17 @@ class LayoutItems {
                 else
                     item.measureWidth(sizeToMeasure);
 
-                if (_totalSize < item._measuredWidth)
-                _totalSize = item._measuredWidth;
+                if (_totalWidth < item._measuredWidth)
+                _totalWidth = item._measuredWidth;
             }
 
         }
-        return _totalSize;
+        return _totalWidth;
     }
 
 
     int measureHeight(int parentHeight) {
-        _totalSize = 0;
+        _totalHeight = 0;
 
         if (_orientation == Orientation.Horizontal) {
             for (int i = 0; i < _count; i++) {
@@ -237,8 +237,8 @@ class LayoutItems {
                 else
                     item.measureHeight(item._measuredMinHeight);
 
-                if (_totalSize < item._measuredHeight)
-                _totalSize = item._measuredHeight;
+                if (_totalHeight < item._measuredHeight)
+                _totalHeight = item._measuredHeight;
             }
         }
         else {
@@ -249,7 +249,7 @@ class LayoutItems {
                     LayoutItem * item = &_list[i];
 
                     item.measureHeight(item._measuredMinHeight);
-                    _totalSize += item._measuredHeight;
+                    _totalHeight += item._measuredHeight;
                 }
             }
             else {
@@ -265,12 +265,12 @@ class LayoutItems {
                     else
                         item.measureHeight(item._measuredMinHeight);
 
-                    _totalSize += item._measuredHeight;
+                    _totalHeight += item._measuredHeight;
                 }
             }
 
         }
-        return _totalSize;
+        return _totalHeight;
 
     }
 
@@ -295,22 +295,22 @@ class LayoutItems {
 
         // main size alignment
         if (_orientation == Orientation.Vertical) {
-            if (_totalSize < rc.height) {
+            if (_totalHeight < rc.height) {
                 if ((_alignment & Align.VCenter) == Align.VCenter) {
-                    mainSizeDelta = (rc.height - _totalSize) / 2;
+                    mainSizeDelta = (rc.height - _totalHeight) / 2;
                 }
                 else if ((_alignment & Align.Bottom) == Align.Bottom) {
-                    mainSizeDelta = rc.height - _totalSize;
+                    mainSizeDelta = rc.height - _totalHeight;
                 }
             }
         } else {
-            if (_totalSize < rc.width) {
+            if (_totalWidth < rc.width) {
                 
                 if ((_alignment & Align.HCenter) == Align.HCenter) {
-                    mainSizeDelta = (rc.width - _totalSize) / 2;
+                    mainSizeDelta = (rc.width - _totalWidth) / 2;
                 }
                 else if ((_alignment & Align.Right) == Align.Right) {
-                    mainSizeDelta = rc.width - _totalSize;
+                    mainSizeDelta = rc.width - _totalWidth;
                 }
             }
         }
