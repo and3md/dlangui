@@ -53,6 +53,7 @@ struct DockSpace {
     @property int space() { return _space; }
     protected int _minSpace;
     protected int _maxSpace;
+    
     ResizerWidget initialize(DockHost host, DockAlignment a) {
         _host = host;
         _alignment = a;
@@ -172,24 +173,91 @@ struct DockSpace {
 }
 
 /// Layout for docking support - contains body widget and optional docked windows
-class DockHost : WidgetGroupDefaultDrawing {
+class DockHost : VerticalLayout {
+    protected HorizontalLayout _topDock;
+    protected HorizontalLayout _bottomDock;
+    protected VerticalLayout _rightDock;
+    protected VerticalLayout _leftDock;
 
+    protected VerticalLayout _topLayout; // to change to splitter
+    protected VerticalLayout _bottomLayout;
+    protected HorizontalLayout _rightLayout;
+    protected HorizontalLayout _leftLayout;
+    protected HorizontalLayout _bodyLayout;
 
-    protected DockSpace _topSpace;
-    protected DockSpace _bottomSpace;
-    protected DockSpace _rightSpace;
-    protected DockSpace _leftSpace;
+    protected LinearLayout getLayout(DockAlignment dockAlignment) {
+        final switch (dockAlignment) {
+            case DockAlignment.Bottom:
+                return _bottomLayout;
+            case DockAlignment.Top:
+                return _topLayout;
+            case DockAlignment.Right:
+                return _rightLayout;
+            case DockAlignment.Left:
+                return _leftLayout;
+        }
+    }
+
+    protected LinearLayout getDock(DockAlignment dockAlignment) {
+        final switch (dockAlignment) {
+            case DockAlignment.Bottom:
+                return _bottomDock;
+            case DockAlignment.Top:
+                return _topDock;
+            case DockAlignment.Right:
+                return _rightDock;
+            case DockAlignment.Left:
+                return _leftDock;
+        }
+    }
+
+    protected void organizeLayouts() {
+        LinearLayout lastLayout = _bodyLayout;
+        for (int i = _layoutPriority.length - 1 ; i >= 0  ; i--) {
+            LinearLayout nextLayout = getLayout(_layoutPriority[i]);
+            if (lastLayout == _bodyLayout) {
+                if (_layoutPriority[i] == DockAlignment.Left || _layoutPriority[i] == DockAlignment.Top) {
+                    nextLayout.addChild(getDock(_layoutPriority[i]));
+                    nextLayout.addChild(_bodyLayout);
+                }
+                else {
+                    nextLayout.addChild(_bodyLayout);
+                    nextLayout.addChild(getDock(_layoutPriority[i]));
+                }
+            }
+            else {
+                if (_layoutPriority[i] == DockAlignment.Left || _layoutPriority[i] == DockAlignment.Top) {
+                    nextLayout.addChild(getDock(_layoutPriority[i]));
+                    nextLayout.addChild(lastLayout);
+                }
+                else {
+                    nextLayout.addChild(lastLayout);
+                    nextLayout.addChild(getDock(_layoutPriority[i]));
+                }
+            }
+            lastLayout = nextLayout;
+        }
+        addChild(lastLayout);
+    }
+
     protected Widget _bodyWidget;
     @property Widget bodyWidget() { return _bodyWidget; }
     @property void bodyWidget(Widget widget) {
-        _children.replace(widget, _bodyWidget);
+        if (_bodyWidget) {
+            _bodyLayout.removeChild(_bodyWidget);
+            destroy(_bodyWidget);
+        }
+        
         _bodyWidget = widget;
         _bodyWidget.layoutWidth(FILL_PARENT).layoutHeight(FILL_PARENT);
-        _bodyWidget.parent = this;
+        _bodyLayout.addChild(_bodyWidget);
+        _bodyWidget.parent = _bodyLayout;
     }
 
     void addDockedWindow(DockWindow dockWin) {
-        addChild(dockWin);
+        LinearLayout dock = getDock(dockWin.dockAlignment);
+        dock.addChild(dockWin);
+        dock.visibility = Visibility.Visible;
     }
 
     DockWindow removeDockedWindow(string id) {
@@ -211,10 +279,33 @@ class DockHost : WidgetGroupDefaultDrawing {
     this(string ID) {
         super(ID);
         styleId = STYLE_DOCK_HOST;
-        addChild(_topSpace.initialize(this, DockAlignment.Top));
-        addChild(_bottomSpace.initialize(this, DockAlignment.Bottom));
-        addChild(_leftSpace.initialize(this, DockAlignment.Left));
-        addChild(_rightSpace.initialize(this, DockAlignment.Right));
+
+        _topDock = new HorizontalLayout();
+        _topDock.fillParent();
+        _topDock.visibility = Visibility.Gone;
+        _bottomDock = new HorizontalLayout();
+        _bottomDock.fillParent();
+        _bottomDock.visibility = Visibility.Gone;
+        _rightDock = new VerticalLayout();
+        _rightDock.fillParent();
+        _rightDock.visibility = Visibility.Gone;
+        _leftDock = new VerticalLayout();
+        _leftDock.fillParent();
+        _leftDock.visibility = Visibility.Gone;
+
+        _topLayout = new VerticalLayout();
+        _topLayout.fillParent();
+        _bottomLayout = new VerticalLayout();
+        _bottomLayout.fillParent();
+        _rightLayout = new HorizontalLayout();
+        _rightLayout.fillParent();
+        _leftLayout = new HorizontalLayout();
+        _leftLayout.fillParent();
+        _bodyLayout = new HorizontalLayout();
+        _bodyLayout.fillParent();
+        _bodyLayout.layoutWeight=3;
+
+        organizeLayouts();
     }
 
     protected DockWindow[] getDockedWindowList(DockAlignment alignType) {
@@ -237,130 +328,6 @@ class DockHost : WidgetGroupDefaultDrawing {
         requestLayout();
     }
 
-    /// Set widget rectangle to specified value and layout widget contents. (Step 2 of two phase layout).
-    override void layout(Rect rc) {
-        _needLayout = false;
-        if (visibility == Visibility.Gone) {
-            return;
-        }
-        _pos = rc;
-        applyMargins(rc);
-        applyPadding(rc);
-        foreach(a; _layoutPriority) {
-            if (a == DockAlignment.Top) _topSpace.beforeLayout(rc, getDockedWindowList(DockAlignment.Top));
-            if (a == DockAlignment.Left) _leftSpace.beforeLayout(rc, getDockedWindowList(DockAlignment.Left));
-            if (a == DockAlignment.Right) _rightSpace.beforeLayout(rc, getDockedWindowList(DockAlignment.Right));
-            if (a == DockAlignment.Bottom) _bottomSpace.beforeLayout(rc, getDockedWindowList(DockAlignment.Bottom));
-        }
-        int topsp, bottomsp, leftsp, rightsp;
-        foreach(a; _layoutPriority) {
-            if (a == DockAlignment.Top) {
-                _topSpace.layout(Rect(rc.left + leftsp, rc.top, rc.right - rightsp, rc.top + _topSpace.space));
-                topsp = _topSpace.space;
-            }
-            if (a == DockAlignment.Bottom) {
-                _bottomSpace.layout(Rect(rc.left + leftsp, rc.bottom - _bottomSpace.space, rc.right - rightsp, rc.bottom));
-                bottomsp = _bottomSpace.space;
-            }
-            if (a == DockAlignment.Left) {
-                _leftSpace.layout(Rect(rc.left, rc.top + topsp, rc.left + _leftSpace.space, rc.bottom - bottomsp));
-                leftsp = _leftSpace.space;
-            }
-            if (a == DockAlignment.Right) {
-                _rightSpace.layout(Rect(rc.right - _rightSpace.space, rc.top + topsp, rc.right, rc.bottom - bottomsp));
-                rightsp = _rightSpace.space;
-            }
-        }
-        if (_bodyWidget)
-            _bodyWidget.layout(Rect(rc.left + _leftSpace.space, rc.top + _topSpace.space, rc.right - _rightSpace.space, rc.bottom - _bottomSpace.space));
-    }
-
-    override void measureMinWidth() {
-        int mw = 0;
-        if (_bodyWidget) {
-            _bodyWidget.measureMinWidth();
-            mw = _bodyWidget.measuredMinWidth;
-        }
-        for (int i = 0; i < _children.count; i++) {
-            Widget item = _children.get(i);
-            // TODO: fix
-            if (item.visibility != Visibility.Gone) {
-                item.measureMinWidth();
-                if (mw < item.measuredMinWidth)
-                    mw = item.measuredMinWidth;
-            }
-        }
-        adjustMeasuredMinWidth(mw);
-    }
-
-    override void measureWidth(int parentWidth) {
-        Rect m = margins;
-        Rect p = padding;
-        int pwidth  = parentWidth - (m.left + m.right + p.left + p.right);
-
-        int w = 0;
-        if (_bodyWidget) {
-            //_bodyWidget.measureWidth(_bodyWidget.measuredMinWidth);
-            _bodyWidget.measureWidth(pwidth);
-            w = _bodyWidget.measuredWidth;
-        }
-
-        for (int i = 0; i < _children.count; i++) {
-            Widget item = _children.get(i);
-            // TODO: fix
-            if (item.visibility != Visibility.Gone) {
-                //item.measureWidth(item.measuredMinWidth);
-                item.measureWidth(pwidth);
-                if (w < item.measuredWidth)
-                    w = item.measuredWidth;
-            }
-        }
-        adjustMeasuredWidth(parentWidth, w + m.left + m.right + p.left + p.right);
-    }
-
-    override void measureMinHeight(int widgetWidth) {
-        int mh = 0;
-        if (_bodyWidget) {
-            _bodyWidget.measureMinHeight(_bodyWidget.measuredWidth);
-            mh = _bodyWidget.measuredMinHeight;
-        }
-
-        for (int i = 0; i < _children.count; i++) {
-            Widget item = _children.get(i);
-            // TODO: fix
-            if (item.visibility != Visibility.Gone) {
-                item.measureMinHeight(item.measuredWidth);
-                if (mh < item.measuredMinHeight)
-                    mh = item.measuredMinHeight;
-            }
-        }
-        adjustMeasuredMinHeight(mh);
-    }
-
-    override void measureHeight(int parentHeight) {
-        Rect m = margins;
-        Rect p = padding;
-
-        int pheight = parentHeight - (m.top + m.bottom + p.top + p.bottom);
-
-        int h = 0;
-        if (_bodyWidget) {
-            _bodyWidget.measureHeight(pheight);
-            h = _bodyWidget.measuredHeight;
-        }
-
-        for (int i = 0; i < _children.count; i++) {
-            Widget item = _children.get(i);
-            // TODO: fix
-            if (item.visibility != Visibility.Gone) {
-                item.measureHeight(item.measuredWidth);
-                if (h < item.measuredHeight)
-                    h = item.measuredHeight;
-            }
-        }
-        adjustMeasuredHeight(parentHeight, h + m.top + m.bottom + p.top + p.bottom);
-    }
-    
 }
 
 /// docked window
@@ -380,6 +347,7 @@ class DockWindow : WindowFrame {
     this(string ID) {
         super(ID);
         focusGroup = true;
+        fillParent();
     }
 
     override protected void initialize() {
